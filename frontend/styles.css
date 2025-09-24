@@ -1,0 +1,55 @@
+/* Basic responsive layout + styles for the starter app.
+   Keep CSS simple so it's easy to customize later. */
+
+:root{
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --shadow: 0 6px 18px rgba(15,23,42,0.06);
+  --radius:12px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+body{background:linear-gradient(180deg,#eef2ff,#f6f7fb);color:#0f1724;padding:18px}
+
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;
+}
+.brand h1{margin:0;font-size:1.15rem}
+.brand .subtitle{font-size:0.85rem;color:var(--muted)}
+
+.actions{display:flex;gap:8px;align-items:center}
+.icon-btn{border-radius:8px;padding:8px 10px;border:none;background:transparent;cursor:pointer;font-size:1.05rem}
+.ghost{background:transparent;border:1px solid rgba(15,23,42,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+.primary{background:var(--accent);color:white;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+.primary:hover{filter:brightness(0.98)}
+
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+@media (max-width:840px){ .layout{grid-template-columns:1fr} }
+
+.left-col{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow)}
+.left-col label{font-weight:600;font-size:.9rem;display:block;margin-bottom:8px}
+#description{width:100%;min-height:160px;padding:10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);font-size:0.95rem}
+.controls{display:flex;gap:8px;margin-top:12px}
+.hints{margin-top:12px;font-size:0.9rem;color:var(--muted)}
+
+.right-col{display:flex;flex-direction:column;gap:12px}
+.canvas{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow);min-height:360px;display:flex;flex-direction:column}
+.preview{flex:1;border-radius:8px;padding:14px;background:linear-gradient(180deg,#ffffff,#fbfdff);overflow:auto}
+.preview > *{margin:8px 0}
+.code{background:#0f1724;color:#e6eef8;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap}
+
+.card{border-radius:10px;padding:14px;background:linear-gradient(180deg,#fff,#fafbff);box-shadow:0 2px 8px rgba(20,20,60,0.04);border:1px solid rgba(15,23,42,0.03)}
+.card .card-title{font-weight:700}
+.hero{padding:28px;border-radius:10px;background:linear-gradient(90deg,#dbeafe,#f0f9ff);text-align:center}
+.hero h2{margin:0 0 6px;font-size:1.25rem}
+.form-field{display:flex;flex-direction:column;gap:6px}
+.input{padding:10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);width:100%}
+.button{padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:white;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+
+/* editable styling */
+[contenteditable]{outline:2px dashed rgba(37,99,235,0.06);padding:2px;border-radius:4px}
+.footer-note{font-size:0.85rem;color:var(--muted)}
