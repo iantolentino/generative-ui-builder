@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generative UI Builder — Starter</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- small icon from Font Awesome CDN for download / toggle (optional) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Generative UI Builder</h1>
+      <div class="subtitle">Describe a UI in plain English → generate live HTML & React JSX</div>
+    </div>
+    <div class="actions">
+      <button id="exportBtn" title="Download HTML" class="icon-btn"><i class="fa-solid fa-download"></i></button>
+      <button id="useLLM" title="(Optional) Hook to LLM" class="ghost">Hook LLM</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="left-col">
+      <label for="description">Describe the UI (plain English)</label>
+      <textarea id="description" placeholder="e.g. A signup form with Email and Password fields, a big blue submit button, and a note below"></textarea>
+
+      <div class="controls">
+        <button id="generateBtn" class="primary">Generate UI</button>
+        <button id="clearBtn" class="ghost">Clear</button>
+      </div>
+
+      <details open class="hints">
+        <summary>Tips & Examples</summary>
+        <ul>
+          <li>"Hero section with title, subtitle, CTA button"</li>
+          <li>"Two-column layout: left image, right text + signup form"</li>
+          <li>"Grid of 3 cards with image, title, and short description"</li>
+        </ul>
+      </details>
+
+      <label for="modeSelect">View mode</label>
+      <select id="modeSelect">
+        <option value="preview">Live Preview</option>
+        <option value="html">Generated HTML</option>
+        <option value="jsx">Generated React (JSX)</option>
+      </select>
+    </section>
+
+    <section class="right-col">
+      <div id="canvasWrapper" class="canvas">
+        <div id="preview" class="preview" aria-live="polite"></div>
+        <pre id="codeOutput" class="code" style="display:none;"></pre>
+      </div>
+
+      <div class="footer-note">
+        <small>Generated UI elements are <strong>editable</strong>: click text to edit. Drag/drop reorder is not included in this starter but is an easy next step.</small>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
