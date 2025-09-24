@@ -9,7 +9,7 @@
  *  - This starter keeps logic simple and annotated so you can extend it.
  *  - Add an LLM by replacing `generateStructureFromPrompt` with an API call.
  */
-
+ 
 /* -------------------------
    Utilities / DOM helpers
    ------------------------- */
