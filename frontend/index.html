@@ -12,9 +12,7 @@
     <div class="nav-left">
       <h1 class="brand">Generative UI Builder</h1>
     </div>
-
     <div class="nav-right">
-      <!-- Theme toggle (emoji) -->
       <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
     </div>
   </header>
@@ -23,7 +21,7 @@
   <section class="hero" aria-labelledby="hero-title">
     <h2 id="hero-title">Build UIs from Plain English ✨</h2>
     <p>Describe your idea in words and instantly generate live, editable UI components.</p>
-    <button id="heroGenerate" class="button hero-cta">Try It Now</button>
+    <button id="heroGenerate" class="button hero-cta" aria-label="Try generator">Try It Now</button>
   </section>
 
   <!-- Main App -->
@@ -34,8 +32,8 @@
 
       <div class="controls-row">
         <div class="left-group">
-          <button id="generateBtn" class="btn-primary">Generate</button>
-          <button id="clearBtn" class="btn-ghost">Clear</button>
+          <button id="generateBtn" class="btn-primary" aria-label="Generate UI">Generate</button>
+          <button id="clearBtn" class="btn-ghost" aria-label="Clear preview">Clear</button>
         </div>
 
         <div class="right-group">
@@ -44,15 +42,24 @@
             <option value="html">HTML</option>
             <option value="jsx">React JSX</option>
           </select>
-          <button id="exportBtn" class="btn-success">Export</button>
+          <button id="exportBtn" class="btn-success" aria-label="Export code">Export</button>
         </div>
       </div>
 
       <div id="status" class="status" aria-live="polite">Ready</div>
     </div>
 
-    <!-- Preview grid -->
-    <section id="preview" class="preview-grid" aria-label="Generated preview"></section>
+    <!-- Split layout: preview + prop editor -->
+    <div class="workspace">
+      <!-- Preview grid -->
+      <section id="preview" class="preview-grid" aria-label="Generated preview"></section>
+
+      <!-- Props panel -->
+      <aside id="propsPanel" class="props-panel" aria-label="Component properties">
+        <h3>Edit Component</h3>
+        <form id="propsForm"></form>
+      </aside>
+    </div>
 
     <!-- Code Output -->
     <pre id="codeOutput" class="code-output" style="display:none;" aria-label="Generated code"></pre>
