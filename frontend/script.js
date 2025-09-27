@@ -1,15 +1,16 @@
 /* script.js — Generative UI Builder
-   - Adds dark/light theme toggle (emoji)
-   - Fixes Generate button behavior (hero + controls call same function)
-   - Adds offline fallback generator when backend unreachable
-   - Provides Preview / HTML / JSX views + Export
+   - Dark/light theme toggle (emoji + rotate animation)
+   - Generate button (hero + controls) unified
+   - Backend + offline fallback generator
+   - Preview / HTML / JSX views + Export
+   - NEW: Props Panel for editing component props
+   - Accessibility: focus outlines, aria labels
 */
 
 /* -------------------------
    Utilities / helpers
 ------------------------- */
 const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
 function escapeHtml(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
 
 /* -------------------------
@@ -20,30 +21,29 @@ function basicTemplatesForType(node) {
   const props = node.props || {};
   const el = document.createElement('div');
   el.className = 'card';
+  el.tabIndex = 0; // focusable
+  el.dataset.type = type;
 
   switch(type) {
     case 'hero':
-      el.innerHTML = `<div class="card-title" contenteditable="true">${escapeHtml(props.title || 'Hero Title')}</div>
-        <div contenteditable="true">${escapeHtml(props.subtitle || 'Supporting subtitle')}</div>
+      el.innerHTML = `<div class="card-title">${escapeHtml(props.title || 'Hero Title')}</div>
+        <div>${escapeHtml(props.subtitle || 'Supporting subtitle')}</div>
         <div style="margin-top:8px"><button class="button">${escapeHtml(props.cta || 'Get started')}</button></div>`;
       break;
 
     case 'navbar':
-      // simple inline navbar preview
       el.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center">
-          <strong contenteditable="true">${escapeHtml(props.brand || 'Brand')}</strong>
-          <div>${(props.links || ['Home','About','Contact']).map(l => `<span style="margin-left:8px" contenteditable="true">${escapeHtml(l)}</span>`).join('')}</div>
+          <strong>${escapeHtml(props.brand || 'Brand')}</strong>
+          <div>${(props.links || ['Home','About','Contact']).map(l => `<span style="margin-left:8px">${escapeHtml(l)}</span>`).join('')}</div>
         </div>`;
       break;
 
     case 'form':
       el.innerHTML = `<div class="card-title">${escapeHtml(props.title || 'Form')}</div>
-        <div style="margin-top:8px">
-          ${(props.fields || ['Email','Password']).map(f =>
-            `<div class="form-field"><label>${escapeHtml(f)}</label><input placeholder="${escapeHtml(f)}"/></div>`
-          ).join('')}
-          <div style="margin-top:10px"><button class="button">${escapeHtml(props.submit || 'Submit')}</button></div>
-        </div>`;
+        ${(props.fields || ['Email','Password']).map(f =>
+          `<div class="form-field"><label>${escapeHtml(f)}</label><input placeholder="${escapeHtml(f)}"/></div>`
+        ).join('')}
+        <div style="margin-top:10px"><button class="button">${escapeHtml(props.submit || 'Submit')}</button></div>`;
       break;
 
     case 'grid':
@@ -55,7 +55,7 @@ function basicTemplatesForType(node) {
       for(let i=0;i<items;i++){
         const c = document.createElement('div');
         c.className = 'card';
-        c.innerHTML = `<div class="card-title" contenteditable="true">Card ${i+1}</div><div contenteditable="true">Description</div>`;
+        c.innerHTML = `<div class="card-title">Card ${i+1}</div><div>Description</div>`;
         gridEl.appendChild(c);
       }
       el.innerHTML = '';
@@ -63,25 +63,25 @@ function basicTemplatesForType(node) {
       break;
 
     case 'list':
-      el.innerHTML = `<ul>${(props.items || []).map(it=>`<li contenteditable="true">${escapeHtml(it)}</li>`).join('')}</ul>`;
+      el.innerHTML = `<ul>${(props.items || []).map(it=>`<li>${escapeHtml(it)}</li>`).join('')}</ul>`;
       break;
 
     case 'card':
-      el.innerHTML = `<div class="card-title" contenteditable="true">${escapeHtml(props.title || 'Card')}</div>
-        <div contenteditable="true">${escapeHtml(props.body || 'Body text')}</div>
+      el.innerHTML = `<div class="card-title">${escapeHtml(props.title || 'Card')}</div>
+        <div>${escapeHtml(props.body || 'Body text')}</div>
         ${props.cta ? `<div style="margin-top:8px"><button class="button">${escapeHtml(props.cta)}</button></div>` : ''}`;
       break;
 
     case 'button':
-      el.innerHTML = `<div><button class="button" contenteditable="true">${escapeHtml(props.text || 'Click')}</button></div>`;
+      el.innerHTML = `<div><button class="button">${escapeHtml(props.text || 'Click')}</button></div>`;
       break;
 
     case 'footer':
-      el.innerHTML = `<div contenteditable="true">${escapeHtml(props.text || '© 2026 Your Company')}</div>`;
+      el.innerHTML = `<div>${escapeHtml(props.text || '© 2026 Your Company')}</div>`;
       break;
 
     default:
-      el.innerHTML = `<div contenteditable="true">${escapeHtml(props.text || 'Block')}</div>`;
+      el.innerHTML = `<div>${escapeHtml(props.text || 'Block')}</div>`;
       break;
   }
 
@@ -92,7 +92,38 @@ function basicTemplatesForType(node) {
 function renderStructure(ast, container) {
   container.innerHTML = '';
   if (!ast || !Array.isArray(ast.components)) return;
-  ast.components.forEach(node => container.appendChild(basicTemplatesForType(node)));
+  ast.components.forEach((node, i) => {
+    const el = basicTemplatesForType(node);
+    // open props editor when clicked
+    el.addEventListener('click', () => openPropsPanel(node, i));
+    container.appendChild(el);
+  });
+}
+
+/* -------------------------
+   Props Panel
+------------------------- */
+function openPropsPanel(node, index) {
+  const panel = $('#propsPanel');
+  const form = $('#propsForm');
+  form.innerHTML = '';
+
+  Object.entries(node.props || {}).forEach(([key, val]) => {
+    const label = document.createElement('label');
+    label.textContent = key;
+
+    const input = document.createElement('input');
+    input.value = val;
+    input.addEventListener('input', () => {
+      node.props[key] = input.value;
+      renderStructure(currentAST, $('#preview'));
+    });
+
+    form.appendChild(label);
+    form.appendChild(input);
+  });
+
+  panel.style.display = 'block';
 }
 
 /* -------------------------
@@ -157,67 +188,45 @@ function astToJSX(ast) {
 }
 
 /* -------------------------
-   Fallback rule-based generator (offline)
+   Fallback rule-based generator
 ------------------------- */
 function generateStructureFromPrompt(prompt) {
   const p = (prompt || '').toLowerCase();
   const components = [];
 
-  // hero / landing detection
-  if (/hero|landing|headline|hero section/.test(p)) {
-    components.push({ type: 'hero', props: { title: prompt.match(/title\s*:\s*([^,.;]+)/i)?.[1] || 'Welcome', subtitle: 'Short supporting copy', cta: 'Get started' } });
+  if (/hero|landing|headline/.test(p)) {
+    components.push({ type: 'hero', props: { title: 'Welcome', subtitle: 'Short text', cta: 'Get started' }});
   }
-
-  // navbar
-  if (/nav|navbar|menu/.test(p)) {
+  if (/navbar|menu/.test(p)) {
     components.push({ type: 'navbar', props: { brand: 'Brand', links: ['Home','About','Contact'] }});
   }
-
-  // form / login / signup
-  if (/form|login|signup|sign up|email|password/.test(p)) {
-    const fields = [];
-    if (/name/.test(p)) fields.push('Full name');
-    if (/email/.test(p)) fields.push('Email');
-    if (/password/.test(p)) fields.push('Password');
-    if (/phone/.test(p)) fields.push('Phone');
-    if (fields.length === 0) fields.push('Email','Password');
-    components.push({ type: 'form', props: { title: 'Sign in', fields, submit: 'Submit' }});
+  if (/form|login|signup|email|password/.test(p)) {
+    components.push({ type: 'form', props: { title: 'Form', fields:['Email','Password'], submit:'Submit' }});
+  }
+  if (/list|todo|tasks/.test(p)) {
+    components.push({ type: 'list', props: { items:['Sample 1','Sample 2'] }});
+  }
+  if (/grid|cards/.test(p)) {
+    components.push({ type: 'grid', props: { items:3 }});
+  }
+  if (/card/.test(p) && !/cards/.test(p)) {
+    components.push({ type: 'card', props: { title: 'Card', body: 'Body text' }});
   }
 
-  // todo / list
-  if (/todo|todo app|task|tasks|list/.test(p)) {
-    components.push({ type: 'form', props: { title: 'Add Task', fields: ['Task'], submit: 'Add' }});
-    components.push({ type: 'list', props: { items: ['Sample task 1','Sample task 2'] }});
-  }
-
-  // grid / cards (detect count)
-  if (/grid|cards|gallery|portfolio/.test(p)) {
-    const match = p.match(/(\d+)\s+(cards|items|grid)/);
-    const items = match ? Math.max(1, Math.min(12, parseInt(match[1],10))) : 3;
-    components.push({ type: 'grid', props: { items }});
-  }
-
-  // single card request
-  if (/card(?!.*grid)/.test(p) && !/cards/.test(p)) {
-    components.push({ type: 'card', props: { title: 'Card title', body: 'Card body', cta: 'Learn more' }});
-  }
-
-  // fallback
-  if (components.length === 0) {
-    components.push({ type: 'card', props: { text: prompt || 'Simple block' }});
-  }
-
+  if (components.length===0) components.push({ type: 'card', props:{ text: prompt }});
   return { components };
 }
 
 /* -------------------------
-   Main UI wiring
+   Main wiring
 ------------------------- */
+let currentAST = { components: [] };
+let isGenerating = false;
+
 document.addEventListener('DOMContentLoaded', () => {
   const description = $('#description');
   const generateBtn = $('#generateBtn');
   const heroGenerate = $('#heroGenerate');
-  const clearBtn = $('#clearBtn');
   const preview = $('#preview');
   const codeOutput = $('#codeOutput');
   const modeSelect = $('#modeSelect');
@@ -225,144 +234,76 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusEl = $('#status');
   const themeToggle = $('#themeToggle');
 
-  let currentAST = { components: [] };
-  let isGenerating = false;
-
-  // Theme: load saved preference
+  // Theme setup
   function applyTheme(theme) {
-    if (theme === 'dark') document.body.classList.add('dark');
+    if (theme==='dark') document.body.classList.add('dark');
     else document.body.classList.remove('dark');
-    // Toggle emoji shows the *action* (if in dark, show sun to switch to light)
     themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
   }
-  const savedTheme = localStorage.getItem('gub_theme') || 'light';
-  applyTheme(savedTheme);
-
+  applyTheme(localStorage.getItem('gub_theme') || 'light');
   themeToggle.addEventListener('click', () => {
-    // animate briefly
     themeToggle.classList.add('rotate');
-    setTimeout(()=> themeToggle.classList.remove('rotate'), 420);
-
+    setTimeout(()=> themeToggle.classList.remove('rotate'), 400);
     const theme = document.body.classList.contains('dark') ? 'light' : 'dark';
     applyTheme(theme);
     localStorage.setItem('gub_theme', theme);
   });
 
-  // Render current AST according to selected mode
+  // Render
   function renderCurrent() {
     renderStructure(currentAST, preview);
-    if (modeSelect.value === 'html') {
-      codeOutput.style.display = 'block';
-      preview.style.display = 'none';
+    if (modeSelect.value==='html') {
+      codeOutput.style.display='block'; preview.style.display='none';
       codeOutput.textContent = astToHTML(currentAST);
-    } else if (modeSelect.value === 'jsx') {
-      codeOutput.style.display = 'block';
-      preview.style.display = 'none';
+    } else if (modeSelect.value==='jsx') {
+      codeOutput.style.display='block'; preview.style.display='none';
       codeOutput.textContent = astToJSX(currentAST);
     } else {
-      codeOutput.style.display = 'none';
-      preview.style.display = 'grid';
+      codeOutput.style.display='none'; preview.style.display='grid';
     }
   }
 
-  // Single generate handler used by both hero CTA and main generate btn
   async function handleGenerate() {
     if (isGenerating) return;
     const prompt = description.value.trim();
-    if (!prompt) { alert('Please type a description (e.g. "Login form with Email and Password")'); return; }
+    if (!prompt) { alert('Please type a description'); return; }
 
     isGenerating = true;
-    statusEl.textContent = 'Generating...';
-    generateBtn.disabled = true;
-    heroGenerate.disabled = true;
-    generateBtn.textContent = 'Generating...';
+    statusEl.textContent='Generating...';
+    generateBtn.disabled=true; heroGenerate.disabled=true;
 
-    // Try backend first
     try {
       const res = await fetch('http://127.0.0.1:8000/generate-ui/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ text: prompt })
       });
-
-      if (!res.ok) throw new Error('Backend returned ' + res.status);
+      if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      // Expect data to be { components: [...] }
-      if (data && Array.isArray(data.components)) currentAST = data;
-      else if (data && data.components) currentAST = data;
-      else currentAST = data; // trust backend format
-
-      statusEl.textContent = 'Done (from backend)';
-    } catch (err) {
-      // Fallback to offline rule-based generator
-      console.warn('Backend not reachable or error — falling back to local generator.', err);
+      currentAST = data;
+      statusEl.textContent='Done (backend)';
+    } catch(e) {
+      console.warn('Backend failed, using local generator.', e);
       currentAST = generateStructureFromPrompt(prompt);
-      statusEl.textContent = 'Done (local fallback)';
+      statusEl.textContent='Done (local)';
     } finally {
-      isGenerating = false;
-      generateBtn.disabled = false;
-      heroGenerate.disabled = false;
-      generateBtn.textContent = 'Generate';
+      isGenerating=false;
+      generateBtn.disabled=false; heroGenerate.disabled=false;
       renderCurrent();
     }
   }
 
-  // Hook both Generate buttons to the same handler
   generateBtn.addEventListener('click', handleGenerate);
   heroGenerate.addEventListener('click', handleGenerate);
-
-  // Also allow Ctrl+Enter in textarea to generate
-  description.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleGenerate();
-  });
-
-  clearBtn.addEventListener('click', () => {
-    description.value = '';
-    currentAST = { components: [] };
-    preview.innerHTML = '';
-    codeOutput.textContent = '';
-    modeSelect.value = 'preview';
-    renderCurrent();
-    statusEl.textContent = 'Cleared';
-  });
 
   modeSelect.addEventListener('change', renderCurrent);
 
   exportBtn.addEventListener('click', () => {
-    const html = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Exported UI</title>
-<style>
-  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px;background:#f8fafc;color:#0f172a}
-  .card{border-radius:10px;padding:14px;background:#fff;border:1px solid #e6eef6;margin:10px 0}
-  .button{background:#2563eb;color:white;padding:10px 14px;border-radius:8px;border:none}
-  .form-field{margin-bottom:8px}
-  input{padding:8px;border-radius:6px;border:1px solid #dbeafe;width:100%}
-</style>
-</head>
-<body>
-  <div id="root">
-${astToHTML(currentAST)}
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Exported UI</title></head><body>${astToHTML(currentAST)}</body></html>`;
+    const blob = new Blob([html], {type:'text/html'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'generated-ui.html';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    const a=document.createElement('a'); a.href=url; a.download='generated-ui.html'; a.click();
     URL.revokeObjectURL(url);
   });
 
-  // Preload helpful example text
-  description.value = 'Login form with Email and Password';
-  // Do not automatically call generate — user might prefer to click
-  statusEl.textContent = 'Ready — try a description and press Generate (or Ctrl+Enter)';
+  statusEl.textContent = 'Ready';
 });
