@@ -22,10 +22,6 @@ def root():
 
 @app.post("/generate-ui/")
 def generate_ui(req: PromptRequest):
-    """
-    Mock response: we map some plain-English prompts -> simple components.
-    Later we’ll replace this with a real AI model.
-    """
     prompt = req.text.lower()
 
     if "login" in prompt:
@@ -48,16 +44,11 @@ def generate_ui(req: PromptRequest):
                     "submit": "Add"
                 }},
                 {"type": "list", "props": {
-                    "items": ["Sample Task 1", "Sample Task 2"]
-                }}
+                    "items": ["Sample Task 1", "Sample Task 2"]}
+                }
             ]
         }
 
-    else:
-        return {
-            "components": [
-                {"type": "card", "props": {
-                    "text": f"⚡ Sorry, I don’t know how to build '{req.text}' yet."
-                }}
-            ]
-        }
+    # ❌ Don't return a "sorry card"
+    # ✅ Instead, force frontend to use fallback generator
+    return {"components": []}
