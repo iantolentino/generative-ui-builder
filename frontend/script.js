@@ -1,27 +1,39 @@
 /* script.js — Generative UI Builder
-   - Dark/light theme toggle (emoji + rotate animation)
-   - Generate button (hero + controls) unified
-   - Backend + offline fallback generator
-   - Preview / HTML / JSX views + Export
-   - NEW: Props Panel for editing component props
-   - Accessibility: focus outlines, aria labels
+   - Fixed wiring, robust fallback, props editor, samples, theme toggle
+   - Send { text, prompt } to backend; fall back to local generator
 */
 
-/* -------------------------
-   Utilities / helpers
-------------------------- */
+/* Helpers */
 const $ = sel => document.querySelector(sel);
-function escapeHtml(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function log(...a){ console.log('[GUB]', ...a); }
+function escapeHtml(s){ return String(s || '').replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+function parseArrayInput(val){
+  if (Array.isArray(val)) return val;
+  if (typeof val !== 'string') return [String(val)];
+  return val.split(',').map(x => x.trim()).filter(Boolean);
+}
 
-/* -------------------------
-   Templates (DOM preview)
-------------------------- */
+/* Sample prompts for quick testing */
+const SAMPLE_PROMPTS = [
+  "Login form with Email and Password",
+  "Hero section with headline and CTA",
+  "Todo app with list and add",
+  "Pricing plans 3",
+  "Contact form",
+  "FAQ section",
+  "Testimonials",
+  "Header with nav",
+  "Button"
+];
+
+/* Templates - returns DOM element for a node */
 function basicTemplatesForType(node) {
   const type = node.type;
   const props = node.props || {};
   const el = document.createElement('div');
   el.className = 'card';
-  el.tabIndex = 0; // focusable
+  el.tabIndex = 0;
   el.dataset.type = type;
 
   switch(type) {
@@ -80,6 +92,64 @@ function basicTemplatesForType(node) {
       el.innerHTML = `<div>${escapeHtml(props.text || '© 2026 Your Company')}</div>`;
       break;
 
+    case 'header':
+      el.innerHTML = `
+        <header style="display:flex;justify-content:space-between;align-items:center">
+          <div class="logo">${escapeHtml(props.logo || 'LOGO')}</div>
+          <nav>${(props.links || ['Home','Services','Contact']).map(l => `<span style="margin-left:10px">${escapeHtml(l)}</span>`).join('')}</nav>
+        </header>`;
+      break;
+
+    case 'hero-image':
+      el.innerHTML = `
+        <section class="hero">
+          <h2>${escapeHtml(props.title || 'Big Headline')}</h2>
+          <p>${escapeHtml(props.subtitle || 'Supporting copy')}</p>
+          <img src="${props.image || 'https://via.placeholder.com/400x200'}" alt="Hero image" style="margin-top:12px;max-width:100%;border-radius:8px"/>
+          <div style="margin-top:8px"><button class="button">${escapeHtml(props.cta || 'Get Started')}</button></div>
+        </section>`;
+      break;
+
+    case 'pricing':
+      el.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+          ${(props.plans || ['Basic','Pro','Enterprise']).map(p => `
+            <div class="card"><div class="card-title">${escapeHtml(p)}</div>
+            <div>$${Math.floor(Math.random()*50)+10}/mo</div>
+            <button class="button">Choose</button></div>`).join('')}
+        </div>`;
+      break;
+
+    case 'testimonial':
+      el.innerHTML = `
+        <blockquote style="font-style:italic">
+          "${escapeHtml(props.quote || 'This product changed my life!')}"
+        </blockquote>
+        <div style="margin-top:8px">— <span>${escapeHtml(props.author || 'Happy User')}</span></div>`;
+      break;
+
+    case 'features':
+      el.innerHTML = `
+        <ul>${(props.items || ['Fast','Secure','Reliable']).map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+      break;
+
+    case 'contact-form':
+      el.innerHTML = `
+        <form class="card" onsubmit="return false;">
+          <label>Name<input type="text" placeholder="Your name"></label>
+          <label>Email<input type="email" placeholder="Your email"></label>
+          <label>Message<textarea placeholder="Your message"></textarea></label>
+          <button class="button">Send</button>
+        </form>`;
+      break;
+
+    case 'faq':
+      el.innerHTML = `
+        ${(props.items || [{q:'Question?',a:'Answer.'}]).map(item=>`
+          <details><summary>${escapeHtml(item.q)}</summary>
+          <p>${escapeHtml(item.a)}</p></details>`).join('')}`;
+      break;
+
     default:
       el.innerHTML = `<div>${escapeHtml(props.text || 'Block')}</div>`;
       break;
@@ -94,41 +164,66 @@ function renderStructure(ast, container) {
   if (!ast || !Array.isArray(ast.components)) return;
   ast.components.forEach((node, i) => {
     const el = basicTemplatesForType(node);
-    // open props editor when clicked
-    el.addEventListener('click', () => openPropsPanel(node, i));
+    el.addEventListener('click', (ev) => { ev.stopPropagation(); openPropsPanel(node, i); });
     container.appendChild(el);
   });
 }
 
-/* -------------------------
-   Props Panel
-------------------------- */
+/* Props Panel to edit node.props */
 function openPropsPanel(node, index) {
   const panel = $('#propsPanel');
   const form = $('#propsForm');
+  const title = $('#propsTitle');
   form.innerHTML = '';
+  title.textContent = `Edit: ${node.type}`;
 
-  Object.entries(node.props || {}).forEach(([key, val]) => {
+  // Show each prop
+  const props = node.props || {};
+  Object.keys(props).forEach(key => {
+    const row = document.createElement('div');
     const label = document.createElement('label');
     label.textContent = key;
-
     const input = document.createElement('input');
-    input.value = val;
+    const val = props[key];
+    input.value = Array.isArray(val) ? val.join(', ') : String(val);
     input.addEventListener('input', () => {
-      node.props[key] = input.value;
+      // Store arrays if the original looked like an array or contains commas
+      if (input.value.includes(',') || Array.isArray(val)) {
+        node.props[key] = parseArrayInput(input.value);
+      } else if (typeof val === 'number') {
+        const n = Number(input.value);
+        node.props[key] = isNaN(n) ? input.value : n;
+      } else {
+        node.props[key] = input.value;
+      }
       renderStructure(currentAST, $('#preview'));
     });
-
-    form.appendChild(label);
-    form.appendChild(input);
+    row.appendChild(label);
+    row.appendChild(input);
+    form.appendChild(row);
   });
+
+  // add quick save for new prop
+  $('#addPropBtn').onclick = () => {
+    const k = prompt('Property name (e.g., cta, title, items):');
+    if (!k) return;
+    node.props = node.props || {};
+    node.props[k] = '';
+    openPropsPanel(node, index); // reopen to refresh
+  };
+
+  // remove component
+  $('#removeCompBtn').onclick = () => {
+    if (!confirm('Remove this component?')) return;
+    currentAST.components.splice(index, 1);
+    renderCurrent();
+    panel.style.display = 'none';
+  };
 
   panel.style.display = 'block';
 }
 
-/* -------------------------
-   AST → HTML string
-------------------------- */
+/* AST -> HTML */
 function astToHTML(ast) {
   if (!ast || !Array.isArray(ast.components)) return '';
   function renderNode(node) {
@@ -157,9 +252,7 @@ function astToHTML(ast) {
   return ast.components.map(renderNode).join('\n\n');
 }
 
-/* -------------------------
-   AST → JSX string
-------------------------- */
+/* AST -> JSX */
 function astToJSX(ast) {
   if (!ast || !Array.isArray(ast.components)) return '';
   function renderNode(node, indent = 4) {
@@ -187,39 +280,90 @@ function astToJSX(ast) {
   return out;
 }
 
-/* -------------------------
-   Fallback rule-based generator
-------------------------- */
+/* Local fallback generator (rule-based) */
 function generateStructureFromPrompt(prompt) {
   const p = (prompt || '').toLowerCase();
   const components = [];
 
+  // hero (with image)
   if (/hero|landing|headline/.test(p)) {
-    components.push({ type: 'hero', props: { title: 'Welcome', subtitle: 'Short text', cta: 'Get started' }});
-  }
-  if (/navbar|menu/.test(p)) {
-    components.push({ type: 'navbar', props: { brand: 'Brand', links: ['Home','About','Contact'] }});
-  }
-  if (/form|login|signup|email|password/.test(p)) {
-    components.push({ type: 'form', props: { title: 'Form', fields:['Email','Password'], submit:'Submit' }});
-  }
-  if (/list|todo|tasks/.test(p)) {
-    components.push({ type: 'list', props: { items:['Sample 1','Sample 2'] }});
-  }
-  if (/grid|cards/.test(p)) {
-    components.push({ type: 'grid', props: { items:3 }});
-  }
-  if (/card/.test(p) && !/cards/.test(p)) {
-    components.push({ type: 'card', props: { title: 'Card', body: 'Body text' }});
+    if (/image/.test(p)) {
+      components.push({ type: 'hero-image', props: { title: 'Welcome!', subtitle: 'With a hero image', cta: 'Get Started', image: 'https://via.placeholder.com/600x300' } });
+    } else {
+      components.push({ type: 'hero', props: { title: 'Welcome!', subtitle: 'Your subtitle here', cta: 'Get Started' } });
+    }
   }
 
-  if (components.length===0) components.push({ type: 'card', props:{ text: prompt }});
+  // header / navbar
+  if (/header/.test(p)) {
+    components.push({ type: 'header', props: { logo: 'LOGO', links: ['Home','Services','Contact'] } });
+  } else if (/nav|navbar|menu/.test(p)) {
+    components.push({ type: 'navbar', props: { brand: 'Brand', links: ['Home','About','Contact'] } });
+  }
+
+  // login / form
+  if (/login|signin|sign in|signup|sign up|email|password/.test(p)) {
+    components.push({ type: 'form', props: { title: 'Sign in', fields: ['Email','Password'], submit: 'Login' } });
+  }
+
+  // todo / list
+  if (/todo|task|tasks|list/.test(p)) {
+    components.push({ type: 'form', props: { title: 'Add Task', fields: ['Task'], submit: 'Add' } });
+    components.push({ type: 'list', props: { items: ['Sample task 1', 'Sample task 2'] } });
+  }
+
+  // button
+  if (/button/.test(p) && !/buttons/.test(p)) {
+    components.push({ type: 'button', props: { text: 'Click me' } });
+  }
+
+  // pricing/plans
+  if (/pricing|plans|subscription/.test(p)) {
+    const count = (p.match(/(\d+)\s*(plans|cards|columns|items)/) || [])[1] || 3;
+    components.push({ type: 'pricing', props: { plans: Array.from({length: Math.min(6, Math.max(1, Number(count)))}, (_,i)=>['Basic','Pro','Enterprise'][i] || `Plan ${i+1}`) } });
+  }
+
+  // testimonials
+  if (/testimonial|review|feedback/.test(p)) {
+    components.push({ type: 'testimonial', props: { quote: 'This is amazing!', author: 'Happy Customer' } });
+  }
+
+  // features
+  if (/feature|benefit|why choose/.test(p)) {
+    components.push({ type: 'features', props: { items: ['Fast','Secure','Scalable'] } });
+  }
+
+  // faq
+  if (/faq|questions|help/.test(p)) {
+    components.push({ type: 'faq', props: { items: [{q:'What is this?', a:'A demo FAQ answer.'}, {q:'How does it work?', a:'Describe and generate.'}] } });
+  }
+
+  // grid/gallery
+  if (/grid|gallery|cards/.test(p)) {
+    const m = p.match(/(\d+)\s+(cards|items|grid)/);
+    const items = m ? Math.max(1, Math.min(12, Number(m[1]))) : 3;
+    components.push({ type: 'grid', props: { items } });
+  }
+
+  // single card
+  if (/card(?!.*cards)/.test(p)) {
+    components.push({ type: 'card', props: { title: 'Card title', body: 'Short description', cta: 'Learn more' } });
+  }
+
+  // footer
+  if (/footer/.test(p)) {
+    components.push({ type: 'footer', props: { text: '© 2026 My Company' } });
+  }
+
+  // fallback
+  if (components.length === 0) {
+    components.push({ type: 'card', props: { text: prompt || 'Simple block' } });
+  }
+
   return { components };
 }
 
-/* -------------------------
-   Main wiring
-------------------------- */
+/* Main wiring */
 let currentAST = { components: [] };
 let isGenerating = false;
 
@@ -233,77 +377,170 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportBtn = $('#exportBtn');
   const statusEl = $('#status');
   const themeToggle = $('#themeToggle');
+  const propsPanel = $('#propsPanel');
+  const closeProps = $('#closeProps');
 
-  // Theme setup
+  // populate samples UI
+  const samplesWrap = $('#samples');
+  SAMPLE_PROMPTS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'sample-chip';
+    btn.type = 'button';
+    btn.textContent = s;
+    btn.addEventListener('click', () => {
+      description.value = s;
+      handleGenerate();
+    });
+    samplesWrap.appendChild(btn);
+  });
+
+  // Theme
   function applyTheme(theme) {
-    if (theme==='dark') document.body.classList.add('dark');
+    if (theme === 'dark') document.body.classList.add('dark');
     else document.body.classList.remove('dark');
     themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
   }
   applyTheme(localStorage.getItem('gub_theme') || 'light');
   themeToggle.addEventListener('click', () => {
     themeToggle.classList.add('rotate');
-    setTimeout(()=> themeToggle.classList.remove('rotate'), 400);
+    setTimeout(()=> themeToggle.classList.remove('rotate'), 420);
     const theme = document.body.classList.contains('dark') ? 'light' : 'dark';
     applyTheme(theme);
     localStorage.setItem('gub_theme', theme);
   });
 
-  // Render
+  // Render current AST
   function renderCurrent() {
     renderStructure(currentAST, preview);
-    if (modeSelect.value==='html') {
-      codeOutput.style.display='block'; preview.style.display='none';
+    if (modeSelect.value === 'html') {
+      codeOutput.style.display = 'block';
+      preview.style.display = 'none';
       codeOutput.textContent = astToHTML(currentAST);
-    } else if (modeSelect.value==='jsx') {
-      codeOutput.style.display='block'; preview.style.display='none';
+    } else if (modeSelect.value === 'jsx') {
+      codeOutput.style.display = 'block';
+      preview.style.display = 'none';
       codeOutput.textContent = astToJSX(currentAST);
     } else {
-      codeOutput.style.display='none'; preview.style.display='grid';
+      codeOutput.style.display = 'none';
+      preview.style.display = 'grid';
     }
   }
 
+  // Generate handler: try backend first, fallback to local
   async function handleGenerate() {
     if (isGenerating) return;
     const prompt = description.value.trim();
     if (!prompt) { alert('Please type a description'); return; }
 
     isGenerating = true;
-    statusEl.textContent='Generating...';
-    generateBtn.disabled=true; heroGenerate.disabled=true;
+    statusEl.textContent = 'Generating...';
+    generateBtn.disabled = true;
+    heroGenerate.disabled = true;
 
     try {
       const res = await fetch('http://127.0.0.1:8000/generate-ui/', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ text: prompt })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // send both keys to maximize compatibility with your backend
+        body: JSON.stringify({ text: prompt, prompt })
       });
-      if (!res.ok) throw new Error(res.status);
+
+      if (!res.ok) throw new Error('Backend ' + res.status);
       const data = await res.json();
-      currentAST = data;
-      statusEl.textContent='Done (backend)';
-    } catch(e) {
-      console.warn('Backend failed, using local generator.', e);
+      log('backend response', data);
+
+      // Accept multiple shapes: { components: [...] } or array or object
+      if (data && Array.isArray(data.components)) {
+        currentAST = { components: data.components };
+      } else if (data && Array.isArray(data)) {
+        currentAST = { components: data };
+      } else if (data && data.components) {
+        currentAST = { components: data.components };
+      } else {
+        // unknown shape -> try interpret
+        currentAST = data && data.components ? data : generateStructureFromPrompt(prompt);
+      }
+      statusEl.textContent = 'Done (backend)';
+    } catch (err) {
+      log('backend failed, falling back locally', err);
       currentAST = generateStructureFromPrompt(prompt);
-      statusEl.textContent='Done (local)';
+      statusEl.textContent = 'Done (local)';
     } finally {
-      isGenerating=false;
-      generateBtn.disabled=false; heroGenerate.disabled=false;
+      isGenerating = false;
+      generateBtn.disabled = false;
+      heroGenerate.disabled = false;
       renderCurrent();
+      log('currentAST', currentAST);
     }
   }
 
   generateBtn.addEventListener('click', handleGenerate);
   heroGenerate.addEventListener('click', handleGenerate);
 
+  // Ctrl/Cmd+Enter to generate
+  description.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleGenerate();
+  });
+
+  // Clear
+  $('#clearBtn').addEventListener('click', () => {
+    description.value = '';
+    currentAST = { components: [] };
+    renderCurrent();
+    statusEl.textContent = 'Cleared';
+  });
+
+  // mode select
   modeSelect.addEventListener('change', renderCurrent);
 
+  // export simple HTML file
   exportBtn.addEventListener('click', () => {
-    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Exported UI</title></head><body>${astToHTML(currentAST)}</body></html>`;
+    const html = `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Exported UI</title>
+<style>
+/* Minimal export styles */
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px;background:#f8fafc;color:#0f172a}
+.card{border-radius:10px;padding:14px;background:#fff;border:1px solid #e6eef6;margin:10px 0}
+.button{background:#2563eb;color:white;padding:10px 14px;border-radius:8px;border:none}
+</style>
+</head>
+<body>
+${astToHTML(currentAST)}
+</body>
+</html>`;
     const blob = new Blob([html], {type:'text/html'});
     const url = URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='generated-ui.html'; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-ui.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
   });
 
-  statusEl.textContent = 'Ready';
+  // props panel close
+  closeProps.addEventListener('click', () => $('#propsPanel').style.display = 'none');
+
+  // Clicking outside preview closes the panel
+  document.addEventListener('click', (e) => {
+    const panel = $('#propsPanel');
+    if (!panel) return;
+    if (panel.style.display === 'none') return;
+    const target = e.target;
+    if (!panel.contains(target) && !$('#preview').contains(target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  // initial state
+  description.value = 'Login form with Email and Password';
+  statusEl.textContent = 'Ready — try a description (or press Generate / Ctrl+Enter)';
+
+  // initial render
+  renderCurrent();
 });
