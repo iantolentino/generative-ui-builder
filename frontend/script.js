@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // send both keys to maximize compatibility with your backend
-        body: JSON.stringify({ text: prompt, prompt })
+        body: JSON.stringify({ text: prompt })
       });
 
       if (!res.ok) throw new Error('Backend ' + res.status);
