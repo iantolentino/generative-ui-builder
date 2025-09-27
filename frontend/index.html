@@ -1,55 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generative UI Builder</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- Navbar -->
   <header class="navbar">
-    <h1>Generative UI Builder</h1>
-    <nav>
-      <a href="#preview">Preview</a>
-      <a href="#code">Code</a>
-      <a href="#about">About</a>
-    </nav>
+    <div class="nav-left">
+      <h1 class="brand">Generative UI Builder</h1>
+    </div>
+
+    <div class="nav-right">
+      <!-- Theme toggle (emoji) -->
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+    </div>
   </header>
 
   <!-- Hero -->
-  <section class="hero">
-    <h2>Build UIs from Plain English ✨</h2>
+  <section class="hero" aria-labelledby="hero-title">
+    <h2 id="hero-title">Build UIs from Plain English ✨</h2>
     <p>Describe your idea in words and instantly generate live, editable UI components.</p>
-    <button class="button" id="generateBtn">Try It Now</button>
+    <button id="heroGenerate" class="button hero-cta">Try It Now</button>
   </section>
 
   <!-- Main App -->
-  <main style="padding: 2rem; max-width: 960px; margin: auto;">
-    <div style="margin-bottom: 1.5rem;">
-      <textarea id="description" rows="3" placeholder="Describe the UI you want..."></textarea>
-      <div style="margin-top: 0.8rem;">
-        <button id="generateBtn">Generate</button>
-        <button id="clearBtn">Clear</button>
-        <select id="modeSelect">
-          <option value="preview" selected>Preview</option>
-          <option value="html">HTML</option>
-          <option value="jsx">React JSX</option>
-        </select>
-        <button id="exportBtn">Export</button>
+  <main class="app-container" role="main">
+    <div class="controls">
+      <label for="description" class="visually-hidden">Describe UI</label>
+      <textarea id="description" placeholder="Describe the UI you want (e.g. 'Login form with Email and Password')"></textarea>
+
+      <div class="controls-row">
+        <div class="left-group">
+          <button id="generateBtn" class="btn-primary">Generate</button>
+          <button id="clearBtn" class="btn-ghost">Clear</button>
+        </div>
+
+        <div class="right-group">
+          <select id="modeSelect" aria-label="Mode select">
+            <option value="preview" selected>Preview</option>
+            <option value="html">HTML</option>
+            <option value="jsx">React JSX</option>
+          </select>
+          <button id="exportBtn" class="btn-success">Export</button>
+        </div>
       </div>
+
+      <div id="status" class="status" aria-live="polite">Ready</div>
     </div>
 
-    <!-- Preview -->
-    <section id="preview" class="grid"></section>
+    <!-- Preview grid -->
+    <section id="preview" class="preview-grid" aria-label="Generated preview"></section>
 
     <!-- Code Output -->
-    <pre id="codeOutput" style="display:none; background:#0f172a; color:#e2e8f0; padding:1rem; border-radius:8px; overflow:auto;"></pre>
+    <pre id="codeOutput" class="code-output" style="display:none;" aria-label="Generated code"></pre>
   </main>
 
   <!-- Footer -->
-  <footer class="footer" id="about">
-    <p>Built with ❤️ by Ian Tolentino · <a href="https://github.com/iantolentino" target="_blank">GitHub</a></p>
+  <footer class="footer">
+    <p>Built with ❤️ · <a href="https://github.com/iantolentino" target="_blank" rel="noopener">Ian Tolentino</a></p>
   </footer>
 
   <script src="script.js"></script>
