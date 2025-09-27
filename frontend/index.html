@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -8,7 +8,7 @@
 </head>
 <body>
   <!-- Navbar -->
-  <header class="navbar">
+  <header class="navbar" role="banner">
     <div class="nav-left">
       <h1 class="brand">Generative UI Builder</h1>
     </div>
@@ -26,7 +26,7 @@
 
   <!-- Main App -->
   <main class="app-container" role="main">
-    <div class="controls">
+    <div class="controls" aria-live="polite">
       <label for="description" class="visually-hidden">Describe UI</label>
       <textarea id="description" placeholder="Describe the UI you want (e.g. 'Login form with Email and Password')"></textarea>
 
@@ -46,7 +46,9 @@
         </div>
       </div>
 
-      <div id="status" class="status" aria-live="polite">Ready</div>
+      <div id="samples" class="samples" aria-hidden="false"></div>
+
+      <div id="status" class="status">Ready</div>
     </div>
 
     <!-- Split layout: preview + prop editor -->
@@ -55,9 +57,14 @@
       <section id="preview" class="preview-grid" aria-label="Generated preview"></section>
 
       <!-- Props panel -->
-      <aside id="propsPanel" class="props-panel" aria-label="Component properties">
-        <h3>Edit Component</h3>
+      <aside id="propsPanel" class="props-panel" aria-label="Component properties" style="display:none;">
+        <button class="close-btn" id="closeProps" aria-label="Close properties">✖</button>
+        <h3 id="propsTitle">Properties</h3>
         <form id="propsForm"></form>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="addPropBtn" class="btn-ghost" type="button">+ Add prop</button>
+          <button id="removeCompBtn" class="btn-ghost" type="button">Remove component</button>
+        </div>
       </aside>
     </div>
 
