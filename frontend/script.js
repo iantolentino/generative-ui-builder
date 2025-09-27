@@ -34,7 +34,44 @@ function basicTemplatesForType(node) {
 
     case 'card':
       el.className = 'card';
-      el.innerHTML = `<div contenteditable="true">${escapeHtml(props.text || 'Block')}</div>`;
+      el.innerHTML = `<div class="card-title" contenteditable="true">${escapeHtml(props.title || 'Card title')}</div>
+                      <div contenteditable="true">${escapeHtml(props.body || 'Card body')}</div>`;
+      break;
+
+    case 'button':
+      el.innerHTML = `<button class="button" contenteditable="true">${escapeHtml(props.text || 'Click me')}</button>`;
+      break;
+
+    case 'navbar':
+      el.className = 'navbar';
+      el.innerHTML = `<div class="navbar-left" contenteditable="true">${escapeHtml(props.brand || 'Brand')}</div>
+                      <div class="navbar-right">
+                        ${(props.links||['Home','About','Contact']).map(l=>`<a href="#" contenteditable="true">${escapeHtml(l)}</a>`).join(' ')}
+                      </div>`;
+      break;
+
+    case 'hero':
+      el.className = 'hero';
+      el.innerHTML = `<h2 contenteditable="true">${escapeHtml(props.title || 'Big Headline')}</h2>
+                      <p contenteditable="true">${escapeHtml(props.subtitle || 'Subtitle text goes here')}</p>
+                      <button class="button">${escapeHtml(props.cta || 'Get Started')}</button>`;
+      break;
+
+    case 'footer':
+      el.className = 'footer';
+      el.innerHTML = `<p contenteditable="true">${escapeHtml(props.text || '© 2025 My Website')}</p>`;
+      break;
+
+    case 'grid':
+      el.className = 'grid';
+      const items = props.items || 3;
+      for (let i=0; i<items; i++) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<div class="card-title" contenteditable="true">Card ${i+1}</div>
+                          <div contenteditable="true">Description for card ${i+1}</div>`;
+        el.appendChild(card);
+      }
       break;
 
     default:
@@ -45,6 +82,7 @@ function basicTemplatesForType(node) {
 
   return el;
 }
+
 
 /* Render preview */
 function renderStructure(ast, container) {
