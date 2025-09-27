@@ -1,174 +1,177 @@
-/* ---------------------------
-   Global Reset & Typography
----------------------------- */
+/* Reset & Base */
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: #f8fafc;
   color: #0f172a;
   line-height: 1.6;
-  padding: 0;
-  margin: 0;
 }
 
-/* ---------------------------
-   Navbar
----------------------------- */
+/* Navbar */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #2563eb;
-  color: #fff;
   padding: 1rem 2rem;
+  background: #1e293b;
+  color: #fff;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 50;
 }
 
 .navbar h1 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
 .navbar nav a {
   margin-left: 1rem;
-  color: #e0f2fe;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
 }
 
 .navbar nav a:hover {
-  color: #fff;
+  color: #38bdf8;
 }
 
-/* ---------------------------
-   Hero Section
----------------------------- */
+/* Hero */
 .hero {
-  padding: 4rem 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #dbeafe, #f0f9ff);
+  padding: 4rem 2rem;
+  background: linear-gradient(90deg, #dbeafe, #f0f9ff);
   border-bottom: 1px solid #e2e8f0;
 }
 
 .hero h2 {
   font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
 }
 
 .hero p {
   font-size: 1.1rem;
-  color: #475569;
-  margin-bottom: 1.5rem;
+  color: #334155;
+  margin-bottom: 1.2rem;
 }
 
-.hero .button {
-  background: #2563eb;
-  color: #fff;
-  padding: 0.8rem 1.2rem;
-  border-radius: 8px;
+/* Buttons */
+button {
+  padding: 0.6rem 1.2rem;
+  margin: 0.3rem;
   border: none;
-  cursor: pointer;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
   font-weight: 600;
-  transition: background 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.hero .button:hover {
-  background: #1d4ed8;
+button#generateBtn,
+button.button {
+  background: #2563eb;
+  color: white;
 }
 
-/* ---------------------------
-   Cards & Grid
----------------------------- */
-.card {
-  border-radius: 10px;
-  padding: 1rem;
+button#generateBtn:hover,
+button.button:hover {
+  background: #1e40af;
+}
+
+button#clearBtn {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+button#clearBtn:hover {
+  background: #cbd5e1;
+}
+
+button#exportBtn {
+  background: #22c55e;
+  color: white;
+}
+
+button#exportBtn:hover {
+  background: #15803d;
+}
+
+/* Select */
+select {
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
   background: #fff;
-  border: 1px solid #e2e8f0;
-  margin: 0.5rem 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease-in-out;
+  font-size: 0.95rem;
 }
 
-.card:hover {
-  transform: translateY(-3px);
+/* Textarea */
+textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 1rem;
+  resize: vertical;
+  min-height: 80px;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
 }
 
-.card-title {
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
+textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
+/* Grid for generated components */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
-  margin: 2rem 0;
+  margin-top: 2rem;
 }
 
-/* ---------------------------
-   Forms
----------------------------- */
-.form-field {
-  margin-bottom: 0.75rem;
-}
-
-label {
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.3rem;
-  color: #334155;
-}
-
-input {
-  padding: 0.6rem;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  width: 100%;
-  font-size: 1rem;
-}
-
-button {
-  background: #2563eb;
-  color: #fff;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-button:hover {
-  background: #1d4ed8;
-}
-
-/* ---------------------------
-   Footer
----------------------------- */
-.footer {
-  background: #0f172a;
-  color: #94a3b8;
-  text-align: center;
+/* Cards */
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 2rem;
   margin-top: 3rem;
+  border-top: 1px solid #e2e8f0;
   font-size: 0.9rem;
+  color: #475569;
 }
 
 .footer a {
-  color: #38bdf8;
+  color: #2563eb;
   text-decoration: none;
-  margin-left: 0.5rem;
+  font-weight: 500;
 }
 
 .footer a:hover {
